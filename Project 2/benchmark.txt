@@ -1,0 +1,10 @@
+Stepsize  Number of Rotations   For non-interacting: Ground     First    Second    For interacting: Ground    First    Second
+99	  16431                                      2.99687    6.98434  10.9617                    0.611755  2.80094  4.88229
+149	  37668                                      2.99865    6.99306  10.9831                    0.611813  2.80306  4.88775
+199       67857                                      2.99936    6.99611  10.9905                    0.611868  2.8039   4.88978
+249       106914                                     2.9999     6.99774  10.9941                    0.613099  2.80431  4.89061
+299       154926                                     3.00156    7.00036  10.9987                    0.612347  2.80597  4.89261
+
+
+
+All assume that r_max = 10.0 and omega_r = 0.5. Please note that the number of rotations is for non-interacting only.
