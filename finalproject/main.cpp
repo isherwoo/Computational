@@ -1,0 +1,649 @@
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <fstream>
+#include <cstdlib>
+#include <new>
+#include <vector>
+#include "planet.h"
+#include "lib.h"
+#include "time.h"
+
+
+using namespace std;
+
+
+ void RK4(){
+
+    double **R,**X,**Y,**Xhalf,**Yhalf,**Rhalf;
+    double **Vxhalf,**Vyhalf,**Vx,**Vy;
+   // double *vx,*vy,*x,*y,*r;
+    //double *vxhalf,*vyhalf,*xhalf,*yhalf,*rhalf;
+    double gravnowx,gravnowy,gravnextx,gravnexty,gravhalfx,gravhalfy,tmax,t0,h,h2,pi,gravnow,gravnext,test,gravhalf;
+    double *kx1,*kx2,*kx3,*kx4,*kvx1,*kvx2,*kvx3,*kvx4;
+    double *ky1,*ky2,*ky3,*ky4,*kvy1,*kvy2,*kvy3,*kvy4;
+    int i,j,n,k,m;
+    t0 = 0.0;
+    tmax = 1.0;
+    n = 500;
+    h = (tmax - t0)/(n+1);
+    h2 = h*h;
+    pi = acos(-1.0);
+    clock_t start, finish;
+  /*  r = new double[n];
+    kvx1 = new double[n];
+    kvy1 = new double[n];
+    kx1 = new double[n];
+    ky1 = new double[n];
+
+    rhalf = new double[n];
+    vxhalf = new double[n];
+    vyhalf = new double[n];
+    xhalf = new double[n];
+    yhalf = new double[n];*/
+
+
+        kvx1 = new double[3];
+        kvy1 = new double[3];
+        kx1 = new double[3];
+        ky1 = new double[3];
+        kvx2 = new double[3];
+        kvy2 = new double[3];
+        kx2 = new double[3];
+        ky2 = new double[3];
+        kvx3 = new double[3];
+        kvy3 = new double[3];
+        kx3 = new double[3];
+        ky3 = new double[3];
+        kvx4 = new double[3];
+        kvy4 = new double[3];
+        kx4 = new double[3];
+        ky4 = new double[3];
+
+    R = (double **) matrix(n,3,sizeof(double));
+    X = (double **) matrix(n,3,sizeof(double));
+    Y = (double **) matrix(n,3,sizeof(double));
+    Rhalf = (double **) matrix(n,3,sizeof(double));
+    Xhalf = (double **) matrix(n,3,sizeof(double));
+    Yhalf = (double **) matrix(n,3,sizeof(double));
+
+    Vx = (double **) matrix(n,3,sizeof(double));
+    Vy = (double **) matrix(n,3,sizeof(double));
+    Vxhalf = (double **) matrix(n,3,sizeof(double));
+    Vyhalf = (double **) matrix(n,3,sizeof(double));
+
+
+
+ //   planet Earth(0.000003,-9.687087657503362E-01, -2.304478999525212E-01,0.0,3.715293823075145E-03*365.0,-1.679555302972549E-02*365.0,0.0);
+ //   planet Sun(1.0,0.00510182404,0.0008987727027,0.0,-0.0004829298902,-0.002481983714,0.0); //(mass,x,y,z,vx,vy,vz)
+ //   planet Jupiter(.000954,-5.344777687381148,.9428344302147893,0.0,-1.398575965353750E-03*365.0,-7.075019624039646E-03*365.0,0.0);
+    //planet all_planets[3] = {Sun,Earth,Jupiter};
+planet Earth(0.000003,1.0000,0,0,0,2*pi,0);
+planet Sun(1.0,0,0,0,0,0,0);
+//planet CM(0,0,0,0,0,0,0);
+//planet Jupiter(0.000954,5.2,0,0,0,-2*pi/sqrt(5.2),0);
+planet all_planets[2] = {Sun,Earth};//,Jupiter};
+m = 2;
+
+
+/* x[0] = 1.0;
+vy[0] = 2*pi+2.5885754;
+vx[0] = 0.0;
+y[0] = 0.0;*/
+
+for(i=0;i<m;i++){
+X[0][i] = all_planets[i].position[0];
+Y[0][i] = all_planets[i].position[1];
+Vx[0][i] = all_planets[i].velocity[0];
+Vy[0][i] = all_planets[i].velocity[1];
+
+}
+start = clock();
+    //Runge-kutta---------------------------------------------------------------------------------------------------------
+for(i=0;i<n-1;i++){
+
+   //First
+    for(j=0;j<m;j++){
+    R[i][j] = sqrt(X[i][j]*X[i][j] + Y[i][j]*Y[i][j]);
+    gravnowx = 0.0;
+    gravnowy = 0.0;
+       for(k=0;k<m;k++){
+
+        if(k!=j){
+
+           gravnowx += 4*pi*pi*(X[i][j]-X[i][k])*all_planets[k].mass/pow(pow(X[i][j]-X[i][k],2.0)+pow(Y[i][j]-Y[i][k],2.0),1.5);
+           gravnowy += 4*pi*pi*(Y[i][j]-Y[i][k])*all_planets[k].mass/pow(pow(X[i][j]-X[i][k],2.0)+pow(Y[i][j]-Y[i][k],2.0),1.5);}
+           else{
+           gravnowx+= 0.0;
+           gravnowy+= 0.0;
+}           }
+
+
+
+    gravnow = 4.0*pi*pi/(R[i][j]*R[i][j]*R[i][j]);
+
+
+    kvx1[j]= gravnowx;
+    kvy1[j] = gravnowy;
+    Xhalf[i][j] = X[i][j] + h/2.0*Vx[i][j];
+    Yhalf[i][j] = Y[i][j] + h/2.0*Vy[i][j];
+    Vxhalf[i][j] = Vx[i][j] - kvx1[j]*h/2.0;
+    Vyhalf[i][j] = Vy[i][j] - kvy1[j]*h/2.0;
+   // cout << kvx1[j] << endl;
+    //test = gravnow*X[i][j];
+    //cout << test << "  " << kvx1[1] << endl;
+}
+    //Second
+
+    for(j=0;j<m;j++){
+    R[i][j] = sqrt(X[i][j]*X[i][j] + Y[i][j]*Y[i][j]);
+    gravhalfx = 0.0;
+    gravhalfy = 0.0;
+       for(k=0;k<m;k++){
+
+        if(k!=j){
+
+           gravhalfx += 4*pi*pi*(Xhalf[i][j]-Xhalf[i][k])*all_planets[k].mass/pow(pow(Xhalf[i][j]-Xhalf[i][k],2.0)+pow(Yhalf[i][j]-Yhalf[i][k],2.0),1.5);
+           gravhalfy += 4*pi*pi*(Yhalf[i][j]-Yhalf[i][k])*all_planets[k].mass/pow(pow(Xhalf[i][j]-Xhalf[i][k],2.0)+pow(Yhalf[i][j]-Yhalf[i][k],2.0),1.5);}
+           else{
+           gravhalfx+= 0.0;
+           gravhalfy+= 0.0;
+}           }
+
+        Rhalf[i][j] = sqrt(Xhalf[i][j]*Xhalf[i][j] +Yhalf[i][j]*Yhalf[i][j] );
+        gravhalf = 4.0*pi*pi/(Rhalf[i][j]*Rhalf[i][j]*Rhalf[i][j]);
+        kvx2[j] = gravhalfx;
+        kvy2[j] = gravhalfy;
+        kx2[j] = Vxhalf[i][j];
+        ky2[j] = Vyhalf[i][j];
+        //test = gravhalf*Yhalf[i][1];
+        //cout << test << "   " << kvy2[1] << endl;
+}
+    //Third
+    for(j=0;j<m;j++){
+        Xhalf[i][j] = X[i][j] + h/2.0*kx2[j];
+        Yhalf[i][j] = Y[i][j] + h/2.0*ky2[j];
+        Vxhalf[i][j] = Vx[i][j] - h/2.0*kvx2[j];
+        Vyhalf[i][j] = Vy[i][j] - h/2.0*kvy2[j];}
+
+    //Fourth
+
+    for(j=0;j<m;j++){
+    Rhalf[i][j] = sqrt(Xhalf[i][j]*Xhalf[i][j] + Yhalf[i][j]*Yhalf[i][j]);
+    gravhalfx = 0.0;
+    gravhalfy = 0.0;
+       for(k=0;k<m;k++){
+
+        if(k!=j){
+
+           gravhalfx += 4*pi*pi*(Xhalf[i][j]-Xhalf[i][k])*all_planets[k].mass/pow(pow(Xhalf[i][j]-Xhalf[i][k],2.0)+pow(Yhalf[i][j]-Yhalf[i][k],2.0),1.5);
+           gravhalfy += 4*pi*pi*(Yhalf[i][j]-Yhalf[i][k])*all_planets[k].mass/pow(pow(Xhalf[i][j]-Xhalf[i][k],2.0)+pow(Yhalf[i][j]-Yhalf[i][k],2.0),1.5);}
+           else{
+           gravhalfx+= 0.0;
+           gravhalfy+= 0.0;
+}           }
+
+
+
+
+
+
+        gravhalf = 4.0*pi*pi/(Rhalf[i][1]*Rhalf[i][1]*Rhalf[i][1]);
+        kvx3[j] = gravhalfx;
+        kvy3[j] = gravhalfy;
+        kx3[j] = Vxhalf[i][j];
+        ky3[j] = Vyhalf[i][j];
+        //test = gravhalf*X[i][1];
+        //cout << test << "  " << kvx3[1] << endl;
+
+
+    }
+
+
+    //Fifth
+
+    for(j=0;j<m;j++){
+    Xhalf[i][j] = X[i][j] + h*kx3[j];
+        Yhalf[i][j] = Y[i][j] + h*ky3[j];
+        Vxhalf[i][j] = Vx[i][j] - h*kvx3[j];
+        Vyhalf[i][j] = Vy[i][j] - h*kvy3[j];
+        Rhalf[i][j] = sqrt(Xhalf[i][j]*Xhalf[i][j] +Yhalf[i][j]*Yhalf[i][j] );
+                gravhalf = 4.0*pi*pi/(Rhalf[i][j]*Rhalf[i][j]*Rhalf[i][j]);
+
+
+                gravhalfx = 0.0;
+                gravhalfy = 0.0;
+                   for(k=0;k<m;k++){
+
+                    if(k!=j){
+
+                       gravhalfx += 4*pi*pi*(Xhalf[i][j]-Xhalf[i][k])*all_planets[k].mass/pow(pow(Xhalf[i][j]-Xhalf[i][k],2.0)+pow(Yhalf[i][j]-Yhalf[i][k],2.0),1.5);
+                       gravhalfy += 4*pi*pi*(Yhalf[i][j]-Yhalf[i][k])*all_planets[k].mass/pow(pow(Xhalf[i][j]-Xhalf[i][k],2.0)+pow(Yhalf[i][j]-Yhalf[i][k],2.0),1.5);}
+                       else{
+                       gravhalfx+= 0.0;
+                       gravhalfy+= 0.0;
+            }           }
+
+
+
+
+                kvx4[j] = gravhalfx;
+                kvy4[j] = gravhalfy;
+                kx4[j] = Vxhalf[i][j];
+                ky4[j] = Vyhalf[i][j];
+                //test = gravhalf*X[i][j];
+                //cout <<test << "  " << kvx4[1] << endl;
+}
+
+    //Sixth
+    for(j=0;j<m;j++){
+        X[i+1][j] = X[i][j] + h/6.0*(Vx[i][j] +2.0*(kx2[j]+kx3[j]) + kx4[j]);
+        Y[i+1][j] = Y[i][j] + h/6.0*(Vy[i][j] +2.0*(ky2[j]+ky3[j]) + ky4[j]);
+        Vx[i+1][j] = Vx[i][j] - h/6.0*(kvx1[j] +2.0*(kvx2[j]+kvx3[j]) + kvx4[j]);
+        Vy[i+1][j] = Vy[i][j] - h/6.0*(kvy1[j] +2.0*(kvy2[j]+kvy3[j]) + kvy4[j]);
+        R[i+1][j] = sqrt(X[i+1][j]*X[i+1][j] + Y[i+1][j]*Y[i+1][j]);
+
+}
+
+    //cout << r[i] << endl;
+
+//cout << R[i][1] << endl;
+
+}
+finish = clock();
+    ofstream myfile;
+        myfile.open("RK4circ.txt");
+    for(i = 0; i<n;i++){
+   myfile << X[i][1] << " " << Y[i][1] << " "<< Vx[i][1] << " " << Vy[i][1] << endl;
+
+      //"  " << i << endl;
+    }
+    cout << ((finish - start)/CLOCKS_PER_SEC) << endl;
+    myfile.close();
+//cout << r[n-1] << " " << x[n-1] << " " << y[n-1] << " " << vx[n-1] << " " << vy[n-1] - 2*pi << endl;
+
+    //---------------------------------------------------------------------------------------------------------------------
+
+    delete [] kx1;
+       delete [] kx2;
+       delete [] kx3;
+       delete [] kx4;
+    delete [] ky1;
+       delete [] ky2;
+       delete [] ky3;
+       delete [] ky4;
+    delete [] kvx1;
+       delete [] kvx2;
+       delete [] kvx3;
+       delete [] kvx4;
+    delete [] kvy1;
+       delete [] kvy2;
+       delete [] kvy3;
+       delete [] kvy4;
+    free_matrix((void **) X);
+    free_matrix((void **) Y);
+
+    free_matrix((void **) R);
+    free_matrix((void **) Rhalf);
+
+    free_matrix((void **) Yhalf);
+    free_matrix((void **) Xhalf);
+    free_matrix((void **) Vyhalf);
+    free_matrix((void **) Vxhalf);
+    free_matrix((void **) Vx);
+    free_matrix((void **) Vy);
+return;
+
+
+
+
+}
+
+void VV(){
+    double **R,**X,**Y,**Xhalf,**Yhalf,**Rhalf;
+    double **Vxhalf,**Vyhalf,**Vx,**Vy;
+   // double *vx,*vy,*x,*y,*r;
+    //double *vxhalf,*vyhalf,*xhalf,*yhalf,*rhalf;
+    double gravnowx,gravnowy,gravnextx,gravnexty,gravhalfx,gravhalfy,tmax,t0,h,h2,pi,gravnow,gravnext,test,gravhalf;
+    double *kx1,*kx2,*kx3,*kx4,*kvx1,*kvx2,*kvx3,*kvx4;
+    double *ky1,*ky2,*ky3,*ky4,*kvy1,*kvy2,*kvy3,*kvy4;
+    int i,j,n,k,m;
+    t0 = 0.0;
+    tmax = 1.0;
+    n = 500;
+    h = (tmax - t0)/(n+1);
+    h2 = h*h;
+    pi = acos(-1.0);
+  /*  r = new double[n];
+    kvx1 = new double[n];
+    kvy1 = new double[n];
+    kx1 = new double[n];
+    ky1 = new double[n];
+
+    rhalf = new double[n];
+    vxhalf = new double[n];
+    vyhalf = new double[n];
+    xhalf = new double[n];
+    yhalf = new double[n];*/
+clock_t start, finish;
+
+        kvx1 = new double[3];
+        kvy1 = new double[3];
+        kx1 = new double[3];
+        ky1 = new double[3];
+        kvx2 = new double[3];
+        kvy2 = new double[3];
+        kx2 = new double[3];
+        ky2 = new double[3];
+        kvx3 = new double[3];
+        kvy3 = new double[3];
+        kx3 = new double[3];
+        ky3 = new double[3];
+        kvx4 = new double[3];
+        kvy4 = new double[3];
+        kx4 = new double[3];
+        ky4 = new double[3];
+
+    R = (double **) matrix(n,3,sizeof(double));
+    X = (double **) matrix(n,3,sizeof(double));
+    Y = (double **) matrix(n,3,sizeof(double));
+    Rhalf = (double **) matrix(n,3,sizeof(double));
+    Xhalf = (double **) matrix(n,3,sizeof(double));
+    Yhalf = (double **) matrix(n,3,sizeof(double));
+
+    Vx = (double **) matrix(n,3,sizeof(double));
+    Vy = (double **) matrix(n,3,sizeof(double));
+    Vxhalf = (double **) matrix(n,3,sizeof(double));
+    Vyhalf = (double **) matrix(n,3,sizeof(double));
+
+
+
+
+   // planet Earth(0.000003,-9.687087657503362E-01, -2.304478999525212E-01,0.0,3.715293823075145E-03*365.0,-1.679555302972549E-02*365.0,0.0);
+ //   planet Sun(1.0,0.00510182404,0.0008987727027,0.0,-0.0004829298902,-0.002481983714,0.0); //(mass,x,y,z,vx,vy,vz)
+  //  planet Jupiter(.000954,-5.344777687381148,.9428344302147893,0.0,-1.398575965353750E-03*365.0,-7.075019624039646E-03*365.0,0.0);
+    //planet all_planets[3] = {Sun,Earth,Jupiter};
+planet Earth(0.000003,1.0000,0,0,0,2*pi,0);
+planet Sun(1.0,0,0,0,0,0,0);
+//planet CM(0,0,0,0,0,0,0);
+//planet Jupiter(0.000954,5.2,0,0,0,-2*pi/sqrt(5.2),0);
+planet all_planets[2] = {Sun,Earth};//,Jupiter};
+m = 2;
+
+
+/*x[0] = 1.0;
+vy[0] = 2*pi+2.5885754;
+vx[0] = 0.0;
+y[0] = 0.0;*/
+
+for(i=0;i<m;i++){
+X[0][i] = all_planets[i].position[0];
+Y[0][i] = all_planets[i].position[1];
+Vx[0][i] = all_planets[i].velocity[0];
+Vy[0][i] = all_planets[i].velocity[1];
+
+}
+
+
+
+    //Verlet-------------------------------------------------------------------------------------------------------------
+start = clock();
+   for(i = 0;i<n-1;i++){
+       for(j = 0;j<m;j++){
+         //  cout << R[0][1] << endl;
+        R[i][j] = sqrt(X[i][j]*X[i][j] + Y[i][j]*Y[i][j]);
+        gravnow = 4.0*pi*pi/pow(R[i][j],3);
+        kx1[j] = 0.0;
+        ky1[j] = 0.0;
+           for(k=0;k<m;k++){
+
+            if(k!=j){
+
+               kx1[j] += 4*pi*pi*(X[i][j]-X[i][k])*all_planets[k].mass/pow(pow(X[i][j]-X[i][k],2.0)+pow(Y[i][j]-Y[i][k],2.0),1.5);
+               ky1[j] += 4*pi*pi*(Y[i][j]-Y[i][k])*all_planets[k].mass/pow(pow(X[i][j]-X[i][k],2.0)+pow(Y[i][j]-Y[i][k],2.0),1.5);}
+               else{
+               kx1[j]+= 0.0;
+               ky1[j]+= 0.0;
+}           }
+
+         //  cout << gravnow*X[i][1] << "  " << kx1[1] << endl;
+    X[i+1][j] = X[i][j] + h*Vx[i][j] - h2/2.0*kx1[j];
+    Y[i+1][j] = Y[i][j] + h*Vy[i][j] - h2/2.0*ky1[j];
+ //   cout << kx1[j] << endl;
+       }
+    //all_planets[j].position[0] = X[i+1][j];
+    //all_planets[];
+       for(j=0;j<m;j++){
+           kx2[j] = 0.0;
+           ky2[j] = 0.0;
+    R[i+1][j] = sqrt(X[i+1][j]*X[i+1][j] + Y[i+1][j]*Y[i+1][j]);
+    gravnext = 4.0*pi*pi/(R[i+1][j]*R[i+1][j]*R[i+1][j]);
+    for(k=0;k<m;k++){
+     if(k!=j){
+         //cout<<X[i+1][k] << endl;
+        kx2[j] += 4*pi*pi*(X[i+1][j]-X[i+1][k])*all_planets[k].mass/pow(sqrt(pow(X[i+1][j]-X[i+1][k],2.0)+pow(Y[i+1][j]-Y[i+1][k],2.0)),3);
+        ky2[j] += 4*pi*pi*(Y[i+1][j]-X[i+1][k])*all_planets[k].mass/pow(sqrt(pow(X[i+1][j]-X[i+1][k],2.0)+pow(Y[i+1][j]-Y[i+1][k],2.0)),3);
+        //cout << gravnextx << " " << j << " " << k << endl;
+     }else{
+        kx2[j]+= 0.0;
+        ky2[j]+= 0.0;
+}           }
+
+    Vx[i+1][j] = Vx[i][j] -h/2.0*(kx2[j] + kx1[j]);
+    test =Vy[i][j] - h/2.0*(gravnext*Y[i+1][1]+gravnow*Y[i][1]);
+    Vy[i+1][j] = Vy[i][j] -h/2.0*(ky2[j] + ky1[j]);
+
+   // cout << Vy[i+1][1] << "  "<< test << endl;
+}
+}
+   finish = clock();
+    ofstream myfile;
+        myfile.open("VVcirc.txt");
+    for(i = 0; i<n;i++){
+     myfile << X[i][1]  << " " << Y[i][1] << " "<< Vx[i][1] << " " << Vy[i][1] << endl;
+     // "  " << i << endl;
+    }
+    //cout << finish-start << endl;
+    cout <<  ((finish - start)/CLOCKS_PER_SEC) << endl;
+    myfile.close();
+//-------------------------------------------------------------------------------------------------------------------------
+
+return;
+}
+
+
+
+void PST(){
+    int m,n,N,k,j,l,i,m1,m1L,mL,j1;
+clock_t start, finish;
+    double a,b,pi = acos(-1.0),nt,c,**d,e,f,g;
+   // d = (double **) matrix(N,N,sizeof(double));
+   // double u1,u2,u3,A,xco,vco;
+    // planet Earth(0.000003,-9.687087657503362E-01, -2.304478999525212E-01,0.0,3.715293823075145E-03*365.0,-1.679555302972549E-02*365.0,0.0);
+    // planet Sun(1.0,0.00510182404,0.0008987727027,0.0,-0.0004829298902,-0.002481983714,0.0); //(mass,x,y,z,vx,vy,vz)
+   //  planet Jupiter(.000954,-5.344777687381148,.9428344302147893,0.0,-1.398575965353750E-03*365.0,-7.075019624039646E-03*365.0,0.0);
+     //planet all_planets[3] = {Sun,Earth,Jupiter};
+ planet Earth(0.000003,1.0000,0,0,0,2*pi,0);
+ planet Sun(1.0,0,0,0,0,0,0);
+ //planet CM(0,0,0,0,0,0,0);
+ //planet Jupiter(0.000954,5.2,0,0,0,-2*pi/sqrt(5.2),0);
+ N=2;
+ planet all_planets[N] = {Sun,Earth};//,Jupiter};
+// N=3;
+ nt=80;
+ d = (double **) matrix(N,N,sizeof(double));
+
+
+
+ vector<vector<vector<double> > > u1;
+ vector<vector<vector<double> > > u2;
+ vector<vector<vector<double> > > u3;
+ vector<vector<vector<double> > > A;
+ vector<vector<vector<double> > > xco;
+ vector<vector<vector<double> > > vco;
+
+ // Set up sizes. (HEIGHT x WIDTH)
+ u1.resize(N);
+ u2.resize(N);
+ u3.resize(N);
+ A.resize(N);
+ xco.resize(N);
+ vco.resize(N);
+ for (int i = 0; i < N; ++i) {
+   u1[i].resize(N);
+   u2[i].resize(N);
+   u3[i].resize(N);
+   A[i].resize(N);
+   xco[i].resize(N);
+   vco[i].resize(N);
+   for (int j = 0; j < N; ++j){
+     u1[i][j].resize(nt);
+     u2[i][j].resize(nt);
+     u3[i][j].resize(nt);
+     A[i][j].resize(nt);
+     xco[i][j].resize(nt);
+     vco[i][j].resize(nt);
+ }
+    }
+for(j=0;j<N;j++){
+for(i=0;i<2;i++){
+ xco[i][j][0] = all_planets[j].position[i];
+ vco[i][j][0] = all_planets[j].velocity[i];
+}
+}
+for(j=0;j<N;j++){
+   for(k = 0;k<N;k++){
+     for(i = 0;i<2;i++){
+      d[j][k] += pow(xco[i][j][0]-xco[i][k][0],2);
+      A[j][k][0] = (xco[i][j][0]-xco[i][k][0])*(vco[i][j][0]-vco[i][k][0]);
+     }
+
+}
+}
+
+for(j=0;j<N;j++){
+for(i=0;i<N;i++){
+    if( i == j)
+        b = 0.0;
+   else{
+    b =1.0/d[j][i];}
+ u1[j][i][0] = b;
+ u2[j][i][0] = b*b;
+ u3[j][i][0] = b*b*b;
+ u1[j][i][0] = b;
+ u2[j][j][0] = b*b;
+ u3[j][i][0] = b*b*b;
+}
+}
+//cout << "test" << endl;
+start = clock();
+    for(m=1;m<nt;m++){ // m may need to equal zero, run program and check
+    m1 = m-1;
+   // cout << m << endl;
+    for(j=0;j<N;j++){
+        for(i = 0;i<2;i++){
+            xco[i][j][m] = vco[i][j][m1]/m;
+          //   cout << xco[i][j][m] << " "<< i << "  " << j << " " << m <<endl;
+            a = 0;
+            for(k = 0;k<N;k++){
+                b = 0;
+                for(l = 0; l<=m1;l++){ //run program to double check bounds
+                    m1L = m1- l;
+                    b += (xco[i][k][l] - xco[i][j][l])*u3[j][k][m1L];
+            }
+                a += 4.0*pi*pi*b*all_planets[k].mass/m;
+            }
+            vco[i][j][m] = a;
+
+        }
+
+        j1 = j-1;
+        for(k=0;k<j1;k++){
+            a = 0;
+            for(l = 0;l<m1;l++){
+                m1L = m1-l;
+                a -= u3[j][k][l]*A[j][k][m1L];
+            }
+            u1[j][k][m] = a/m;
+            u1[k][j][m] = a/m;
+            a = 0;
+            for(l = 0;l<m1;l++){
+                mL = m-l;
+                a += u1[j][k][l]*u1[j][k][mL];
+            }
+            u2[j][k][l] = a;
+            u2[k][j][l] = a;
+            a = 0;
+            b = 0;
+            for(l = 0;l<m;l++){
+                mL = m-l;
+                b+= u2[j][k][l]*u1[j][k][mL];
+                for (i=0;i<2;i++){
+                    a+=(xco[i][j][l]-xco[i][k][l])*(vco[i][j][mL]-vco[i][k][mL]);
+                }
+            }
+            A[j][k][m] = a;
+            A[k][j][m] = a;
+            u3[j][k][m] = b;
+            u3[k][j][m] = b;
+        }
+        A[j][j][m] = 0;
+        u1[j][j][m] = 0;
+        u2[j][j][m] = 0;
+        u3[j][j][m] = 0;
+    }
+    }
+   // finish = clock();
+  //  cout << xco[0][1][2]<< endl;
+
+//cout << "test" << endl;
+  //  cout << xco[0][1][0]+ xco[0][1][2]+xco[0][1][4]+xco[0][1][6]+xco[0][1][8]+xco[0][1][10]+xco[0][1][12]+xco[0][1][14]
+    //        +xco[0][1][16]+xco[0][1][18]+xco[0][1][20]+xco[0][1][22]<< endl;
+
+    ofstream myfile;
+    myfile.open("PSTcirc.txt");
+    for(j=0;j<500;j++){
+        a = 0.0;
+        c = 0.0;
+        e = 0.0;
+        f = 0.0;
+        g=0.0;
+    for(i=0;i<nt;i++){
+        //a = 2*i;
+        c = xco[0][1][i];//*pow(j/501.0,i);
+        e += xco[1][1][i]*pow(j/501.0,i);
+        f += vco[0][1][i]*pow(j/501.0,i);
+        g += vco[1][1][i]*pow(j/501.0,i);
+        cout  << c << endl;
+    }
+    myfile << c << " " << e << " " << f << " " << g << endl;
+    }finish = clock();
+    //cout << (finish-start)/CLOCKS_PER_SEC << endl;
+    myfile << ((finish - start)/CLOCKS_PER_SEC) << endl;
+myfile.close();
+
+
+return;
+
+}
+
+
+
+
+
+int main()
+{
+
+  //  cout << X[0][1] << endl;
+    int i;
+    for(i=0;i<10;i++){
+        cout << i << endl;
+RK4();
+
+VV();
+PST();
+}
+
+
+       return 0;
+}
